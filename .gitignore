@@ -1,0 +1,10 @@
+classes/
+lib/
+*.pyc
+.classpath
+.project
+*.jar
+*.class
+.lein-deps-sum
+.idea
+
