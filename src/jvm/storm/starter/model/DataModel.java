@@ -42,4 +42,26 @@ public class DataModel {
     public String get(DataFields field) {
         return field.get(this);
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        DataModel dataModel = (DataModel) o;
+
+        if (!network.equals(dataModel.network)) return false;
+        if (!site.equals(dataModel.site)) return false;
+        if (!tag.equals(dataModel.tag)) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = network.hashCode();
+        result = 31 * result + site.hashCode();
+        result = 31 * result + tag.hashCode();
+        return result;
+    }
 }
