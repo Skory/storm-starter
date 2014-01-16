@@ -7,4 +7,5 @@ lib/
 *.class
 .lein-deps-sum
 .idea
+target/*
 
