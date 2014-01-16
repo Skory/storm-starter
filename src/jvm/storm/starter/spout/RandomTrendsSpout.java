@@ -9,12 +9,10 @@ import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
 import com.google.common.collect.Lists;
 import org.uncommons.maths.random.PoissonGenerator;
+import storm.starter.TrendingTopology;
 import storm.starter.model.DataModel;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 
 public class RandomTrendsSpout extends BaseRichSpout {
@@ -30,29 +28,27 @@ public class RandomTrendsSpout extends BaseRichSpout {
     );
 
 
-    private final static List<String> networks = new ArrayList<String>(3) {{
+    private final List<String> networks = new ArrayList<String>(3) {{
         add("facebook");
         add("twitter");
         add("instagram");
     }};
-    private final static List<String> sites = new ArrayList<>();
-    private final static List<String> tags = new ArrayList<>();
-
-    static {
-        readSource("spout/sites.txt", sites);
-        readSource("spout/tags.txt", tags);
-    }
+    private final List<String> sites = new ArrayList<>();
+    private final List<String> tags = new ArrayList<>();
 
     public RandomTrendsSpout(int batchSize, int batchIntervals) {
         this.batchSize = batchSize;
         this.batchIntervals = batchIntervals;
+
+        readSource("/resources/sites.txt", sites);
+        readSource("/resources/tags.txt", tags);
     }
 
-    private static void readSource(String filename, List<String> readTo) {
+    private void readSource(String resourceName, List<String> readTo) {
         List<String> lines = new ArrayList<>();
-        File sitesFile = new File(filename);
         try {
-            try (BufferedReader br = new BufferedReader(new FileReader(sitesFile))) {
+            InputStream resourceAsStream = TrendingTopology.class.getResourceAsStream(resourceName);
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(resourceAsStream))) {
                 for (String line; (line = br.readLine()) != null; ) {
                     lines.add(line);
                 }

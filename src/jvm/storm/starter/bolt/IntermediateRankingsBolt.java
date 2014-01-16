@@ -13,29 +13,29 @@ import storm.starter.tools.RankableObjectWithFields;
  */
 public final class IntermediateRankingsBolt extends AbstractRankerBolt {
 
-  private static final long serialVersionUID = -1369800530256637409L;
-  private static final Logger LOG = Logger.getLogger(IntermediateRankingsBolt.class);
+    private static final long serialVersionUID = -1369800530256637409L;
+    private static final Logger LOG = Logger.getLogger(IntermediateRankingsBolt.class);
 
-  public IntermediateRankingsBolt() {
-    super();
-  }
+    public IntermediateRankingsBolt() {
+        super();
+    }
 
-  public IntermediateRankingsBolt(int topN) {
-    super(topN);
-  }
+    public IntermediateRankingsBolt(int topN) {
+        super(topN);
+    }
 
-  public IntermediateRankingsBolt(int topN, int emitFrequencyInSeconds) {
-    super(topN, emitFrequencyInSeconds);
-  }
+    public IntermediateRankingsBolt(int topN, int emitFrequencyInSeconds) {
+        super(topN, emitFrequencyInSeconds);
+    }
 
-  @Override
-  void updateRankingsWithTuple(Tuple tuple) {
-    Rankable rankable = RankableObjectWithFields.from(tuple);
-    super.getRankings().updateWith(rankable);
-  }
+    @Override
+    void updateRankingsWithTuple(Tuple tuple) {
+        Rankable rankable = RankableObjectWithFields.from(tuple);
+        super.getRankings().updateWith(rankable);
+    }
 
-  @Override
-  Logger getLogger() {
-    return LOG;
-  }
+    @Override
+    Logger getLogger() {
+        return LOG;
+    }
 }

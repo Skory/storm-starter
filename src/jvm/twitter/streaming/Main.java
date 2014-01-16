@@ -3,11 +3,10 @@ package twitter.streaming;
 import java.io.IOException;
 
 public class Main {
-    public static void main(String[] args){
-        TwitterStreaming twitterStreaming = null;
+    public static void main(String[] args) {
         try {
-            twitterStreaming = new TwitterStreaming("src/jvm/storm/starter/spout/sites.txt",
-                    "src/jvm/storm/starter/spout/tags.txt", 10);
+            TwitterStreaming twitterStreaming = new TwitterStreaming("src/jvm/storm/starter/spout/tags.txt",
+                    "src/jvm/storm/starter/spout/sites.txt", 10);
 
             twitterStreaming.connect();
 

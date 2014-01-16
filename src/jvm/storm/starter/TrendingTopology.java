@@ -27,9 +27,9 @@ public class TrendingTopology {
             String countBoltName = "count-" + group;
             builder.setBolt(countBoltName, new RollingCountBolt(), 3).fieldsGrouping("router", group, new Fields("tuple"));
             String topNIntermediateBoltName = "topN-intermediate-" + group;
-            builder.setBolt(topNIntermediateBoltName, new IntermediateRankingsBolt(), 3).shuffleGrouping(countBoltName);
+            builder.setBolt(topNIntermediateBoltName, new IntermediateRankingsBolt(100), 3).shuffleGrouping(countBoltName);
             String topNBoltName = "topN-" + group;
-            builder.setBolt(topNBoltName, new TotalRankingsBolt(), 1).globalGrouping(topNIntermediateBoltName);
+            builder.setBolt(topNBoltName, new TotalRankingsBolt(100), 1).globalGrouping(topNIntermediateBoltName);
             builder.setBolt("printer-" + group, new PrinterBolt()).globalGrouping(topNBoltName);
         }
 

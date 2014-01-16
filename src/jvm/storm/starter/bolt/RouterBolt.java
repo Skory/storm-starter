@@ -39,7 +39,7 @@ public class RouterBolt extends BaseRichBolt {
                 tuple.getStringByField(DataFields.site.name()),
                 tuple.getStringByField(DataFields.tag.name()));
 
-        for (Map.Entry<? extends Set<DataFields>, String> routingEntry : routingMap.entrySet()){
+        for (Map.Entry<? extends Set<DataFields>, String> routingEntry : routingMap.entrySet()) {
             List<String> fieldValues = new ArrayList<String>();
             for (DataFields dataField : routingEntry.getKey()) {
                 fieldValues.add(model.get(dataField));
@@ -52,7 +52,7 @@ public class RouterBolt extends BaseRichBolt {
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
-        for (Map.Entry<? extends Set<DataFields>, String> routingEntry : routingMap.entrySet()){
+        for (Map.Entry<? extends Set<DataFields>, String> routingEntry : routingMap.entrySet()) {
             outputFieldsDeclarer.declareStream(routingEntry.getValue(), new Fields("tuple"));
         }
     }

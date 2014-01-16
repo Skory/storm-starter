@@ -106,7 +106,7 @@ public class TwitterStreaming {
                     for (Object hashtag : hashtags) {
                         String tag = ((Map) hashtag).get("text").toString();
                         if (trendingSet.add(tag)) {
-                            tagsToWrite.add(tag);
+                            tagsToWrite.add("#" + tag);
                         }
                     }
                 }
