@@ -8,14 +8,19 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+import com.yammer.metrics.core.*;
 import org.apache.log4j.Logger;
+import storm.starter.Application;
+import storm.starter.metrics.MetricsManager;
 import storm.starter.tools.NthLastModifiedTimeTracker;
 import storm.starter.tools.SlidingWindowCounter;
+import storm.starter.util.Action1;
 import storm.starter.util.TupleHelpers;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This bolt performs rolling counts of incoming objects, i.e. sliding window based counting.
@@ -37,6 +42,8 @@ import java.util.Map.Entry;
  * during the first ~ five minutes of startup time if the window length is set to five minutes).
  */
 public class RollingCountBolt extends BaseRichBolt {
+    private final String meterName;
+    private final String timerName;
 
     private static final long serialVersionUID = 5537727428628598519L;
     private static final Logger LOG = Logger.getLogger(RollingCountBolt.class);
@@ -60,8 +67,26 @@ public class RollingCountBolt extends BaseRichBolt {
     public RollingCountBolt(int windowLengthInSeconds, int emitFrequencyInSeconds) {
         this.windowLengthInSeconds = windowLengthInSeconds;
         this.emitFrequencyInSeconds = emitFrequencyInSeconds;
-        counter = new SlidingWindowCounter<Object>(deriveNumWindowChunksFrom(this.windowLengthInSeconds,
+        counter = new SlidingWindowCounter<>(deriveNumWindowChunksFrom(this.windowLengthInSeconds,
                 this.emitFrequencyInSeconds));
+
+        Application.getMetrics().newGauge(RollingCountBolt.class, "windowCounter",
+                new Gauge<Integer>() {
+                    @Override
+                    public Integer value() {
+                        return counter.getObjectsCount();
+                    }
+                });
+
+        MetricName metricName = new MetricName(RollingCountBolt.class, "requests");
+        Meter requests = Application.getMetrics().newMeter(metricName, "execute", TimeUnit.SECONDS);
+        meterName = metricName.toString();
+        MetricsManager.register(meterName, requests);
+
+        MetricName timerMetric = new MetricName(RollingCountBolt.class, "incrementCount");
+        Timer timer = Application.getMetrics().newTimer(timerMetric, TimeUnit.SECONDS, TimeUnit.SECONDS);
+        timerName = timerMetric.toString();
+        MetricsManager.register(timerName, timer);
     }
 
     private int deriveNumWindowChunksFrom(int windowLengthInSeconds, int windowUpdateFrequencyInSeconds) {
@@ -82,6 +107,12 @@ public class RollingCountBolt extends BaseRichBolt {
             LOG.debug("Received tick tuple, triggering emit of current window counts");
             emitCurrentWindowCounts();
         } else {
+            MetricsManager.interactWith(meterName, new Action1<Meter>() {
+                @Override
+                public void invoke(Meter arg) {
+                    arg.mark();
+                }
+            });
             countObjAndAck(tuple);
         }
     }
@@ -93,6 +124,7 @@ public class RollingCountBolt extends BaseRichBolt {
         if (actualWindowLengthInSeconds != windowLengthInSeconds) {
             LOG.warn(String.format(WINDOW_LENGTH_WARNING_TEMPLATE, actualWindowLengthInSeconds, windowLengthInSeconds));
         }
+
         emit(counts, actualWindowLengthInSeconds);
     }
 
@@ -104,10 +136,21 @@ public class RollingCountBolt extends BaseRichBolt {
         }
     }
 
-    private void countObjAndAck(Tuple tuple) {
-        Object obj = tuple.getValue(0);
-        counter.incrementCount(obj);
-        collector.ack(tuple);
+    private void countObjAndAck(final Tuple tuple) {
+        MetricsManager.interactWith(timerName, new Action1<Timer>() {
+            @Override
+            public void invoke(Timer arg) {
+                TimerContext time = arg.time();
+                try {
+                    Object obj = tuple.getValue(0);
+                    counter.incrementCount(obj);
+                    collector.ack(tuple);
+                } finally {
+                    time.stop();
+                }
+            }
+        });
+
     }
 
     @Override
@@ -117,7 +160,7 @@ public class RollingCountBolt extends BaseRichBolt {
 
     @Override
     public Map<String, Object> getComponentConfiguration() {
-        Map<String, Object> conf = new HashMap<String, Object>();
+        Map<String, Object> conf = new HashMap<>();
         conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, emitFrequencyInSeconds);
         return conf;
     }

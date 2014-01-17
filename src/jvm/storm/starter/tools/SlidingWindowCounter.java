@@ -90,6 +90,11 @@ public final class SlidingWindowCounter<T> implements Serializable {
         return counts;
     }
 
+    public int getObjectsCount() {
+
+        return objCounter.size();
+    }
+
     private void advanceHead() {
         headSlot = tailSlot;
         tailSlot = slotAfter(tailSlot);

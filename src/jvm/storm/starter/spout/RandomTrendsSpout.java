@@ -8,15 +8,24 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
 import com.google.common.collect.Lists;
+import com.yammer.metrics.core.Counter;
+import com.yammer.metrics.core.MetricName;
 import org.uncommons.maths.random.PoissonGenerator;
+import storm.starter.Application;
 import storm.starter.TrendingTopology;
+import storm.starter.metrics.MetricsManager;
 import storm.starter.model.DataModel;
+import storm.starter.util.Action1;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.*;
 
 public class RandomTrendsSpout extends BaseRichSpout {
     private SpoutOutputCollector collector;
+    private final String counterName;
     private final static Random random = new Random(System.currentTimeMillis());
     private final int batchSize;
     private final int batchIntervals;
@@ -27,7 +36,6 @@ public class RandomTrendsSpout extends BaseRichSpout {
             new PoissonGenerator(100, random)
     );
 
-
     private final List<String> networks = new ArrayList<String>(3) {{
         add("facebook");
         add("twitter");
@@ -37,6 +45,11 @@ public class RandomTrendsSpout extends BaseRichSpout {
     private final List<String> tags = new ArrayList<>();
 
     public RandomTrendsSpout(int batchSize, int batchIntervals) {
+        MetricName metricName = new MetricName(RandomTrendsSpout.class, "pendingTuples");
+        Counter pendingTuples = Application.getMetrics().newCounter(metricName);
+        counterName = metricName.toString();
+        MetricsManager.register(counterName, pendingTuples);
+
         this.batchSize = batchSize;
         this.batchIntervals = batchIntervals;
 
@@ -88,9 +101,17 @@ public class RandomTrendsSpout extends BaseRichSpout {
     @Override
     public void nextTuple() {
         Utils.sleep(batchIntervals);
+
         for (int i = 0; i < batchSize; ++i) {
             DataModel dataModel = new DataModel(getNextValue(networks), getNextValue(sites), getNextValue(tags));
             Values tuple = new Values(dataModel.getNetwork(), dataModel.getSite(), dataModel.getTag());
+
+            MetricsManager.interactWith(counterName, new Action1<Counter>() {
+                @Override
+                public void invoke(Counter arg) {
+                    arg.inc();
+                }
+            });
 
             collector.emit(tuple, dataModel);
         }
@@ -109,6 +130,13 @@ public class RandomTrendsSpout extends BaseRichSpout {
         } else {
             statisticMap.put(dataModel, count + 1);
         }
+
+        MetricsManager.interactWith(counterName, new Action1<Counter>() {
+            @Override
+            public void invoke(Counter arg) {
+                arg.dec();
+            }
+        });
     }
 
     @Override
