@@ -42,7 +42,6 @@ import java.util.concurrent.TimeUnit;
  * during the first ~ five minutes of startup time if the window length is set to five minutes).
  */
 public class RollingCountBolt extends BaseRichBolt {
-    private final String meterName;
     private final String timerName;
 
     private static final long serialVersionUID = 5537727428628598519L;
@@ -78,11 +77,6 @@ public class RollingCountBolt extends BaseRichBolt {
                     }
                 });
 
-        MetricName metricName = new MetricName(RollingCountBolt.class, "requests");
-        Meter requests = Application.getMetrics().newMeter(metricName, "execute", TimeUnit.SECONDS);
-        meterName = metricName.toString();
-        MetricsManager.register(meterName, requests);
-
         MetricName timerMetric = new MetricName(RollingCountBolt.class, "incrementCount");
         Timer timer = Application.getMetrics().newTimer(timerMetric, TimeUnit.SECONDS, TimeUnit.SECONDS);
         timerName = timerMetric.toString();
@@ -107,12 +101,6 @@ public class RollingCountBolt extends BaseRichBolt {
             LOG.debug("Received tick tuple, triggering emit of current window counts");
             emitCurrentWindowCounts();
         } else {
-            MetricsManager.interactWith(meterName, new Action1<Meter>() {
-                @Override
-                public void invoke(Meter arg) {
-                    arg.mark();
-                }
-            });
             countObjAndAck(tuple);
         }
     }

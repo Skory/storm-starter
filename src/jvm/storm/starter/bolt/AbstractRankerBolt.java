@@ -65,13 +65,11 @@ public abstract class AbstractRankerBolt extends BaseBasicBolt {
             getLogger().debug("Received tick tuple, triggering emit of current rankings");
             emitRankings(collector);
         } else {
-            onExecute();
             updateRankingsWithTuple(tuple);
         }
     }
 
     abstract void updateRankingsWithTuple(Tuple tuple);
-    abstract void onExecute();
 
     private void emitRankings(BasicOutputCollector collector) {
         collector.emit(new Values(rankings.copy()));

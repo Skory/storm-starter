@@ -101,7 +101,7 @@
         <testSourceDirectory>test/jvm</testSourceDirectory>
         <resources>
             <resource>
-                <directory>${basedir}/multilang</directory>
+                <directory>${basedir}/resources</directory>
             </resource>
         </resources>
 
