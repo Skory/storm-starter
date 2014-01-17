@@ -53,8 +53,8 @@ public class RandomTrendsSpout extends BaseRichSpout {
         this.batchSize = batchSize;
         this.batchIntervals = batchIntervals;
 
-        readSource("/resources/sites.txt", sites);
-        readSource("/resources/tags.txt", tags);
+        readSource("/sites.txt", sites);
+        readSource("/tags.txt", tags);
     }
 
     private void readSource(String resourceName, List<String> readTo) {
