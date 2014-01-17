@@ -20,6 +20,10 @@
     </appender>
 
     <logger name="metrics" level="INFO" additivity="true">
+        <!--<appender-ref ref="METRICS-FILE"/>-->
+    </logger>
+
+    <logger name="metrics-json" level="INFO" additivity="false">
         <appender-ref ref="METRICS-FILE"/>
     </logger>
 

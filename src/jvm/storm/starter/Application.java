@@ -1,6 +1,7 @@
 package storm.starter;
 
 import com.yammer.metrics.core.MetricsRegistry;
+import storm.starter.metrics.JSONLogReporter;
 import storm.starter.metrics.LogReporter;
 
 import java.util.concurrent.TimeUnit;
@@ -14,6 +15,7 @@ public class Application {
 
     public static void main(String[] args) throws Exception {
         LogReporter.enable("topology", metrics, 10, TimeUnit.SECONDS);
+        JSONLogReporter.enable("topology", metrics, 10, TimeUnit.SECONDS);
         TrendingTopology.main(args);
     }
 }
