@@ -18,7 +18,6 @@ import java.util.concurrent.TimeUnit;
  * additionalField2, ..., additionalFieldN).
  */
 public final class IntermediateRankingsBolt extends AbstractRankerBolt {
-    private String meterName;
     private String timerName;
 
     private static final long serialVersionUID = -1369800530256637409L;
@@ -40,11 +39,6 @@ public final class IntermediateRankingsBolt extends AbstractRankerBolt {
     }
 
     private void registerMetrics() {
-        MetricName metricName = new MetricName(IntermediateRankingsBolt.class, "requests");
-        Meter requests = Application.getMetrics().newMeter(metricName, "execute", TimeUnit.SECONDS);
-        meterName = metricName.toString();
-        MetricsManager.register(meterName, requests);
-
         MetricName timerMetric = new MetricName(IntermediateRankingsBolt.class, "updateRankings");
         Timer timer = Application.getMetrics().newTimer(timerMetric, TimeUnit.SECONDS, TimeUnit.SECONDS);
         timerName = timerMetric.toString();
@@ -66,16 +60,6 @@ public final class IntermediateRankingsBolt extends AbstractRankerBolt {
             }
         });
 
-    }
-
-    @Override
-    void onExecute() {
-        MetricsManager.interactWith(meterName, new Action1<Meter>() {
-            @Override
-            public void invoke(Meter arg) {
-                arg.mark();
-            }
-        });
     }
 
     @Override
