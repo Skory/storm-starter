@@ -21,7 +21,7 @@ public class TrendingTopology {
 
         builder.setBolt("router", new RouterBolt(ImmutableMap.of(EnumSet.of(network, site, tag), "nst",
                 EnumSet.of(network, site), "ns",
-                EnumSet.of(network, tag), "nt")), 1).noneGrouping("spout");
+                EnumSet.of(network, tag), "nt")), 3).shuffleGrouping("spout");
 
         for (String group : new String[]{"nst", "ns", "nt"}) {
             String countBoltName = "count-" + group;
@@ -44,10 +44,12 @@ public class TrendingTopology {
             conf.setMaxTaskParallelism(3);
 
             LocalCluster cluster = new LocalCluster();
-            cluster.submitTopology("trend-count", conf, builder.createTopology());
+            String topologyName = "trend-count";
+            cluster.submitTopology(topologyName, conf, builder.createTopology());
 
             Thread.sleep(120 * 1000);
 
+            cluster.killTopology(topologyName);
             cluster.shutdown();
         }
     }

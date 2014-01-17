@@ -14,13 +14,11 @@ import storm.starter.Application;
 import storm.starter.metrics.MetricsManager;
 import storm.starter.tools.NthLastModifiedTimeTracker;
 import storm.starter.tools.SlidingWindowCounter;
-import storm.starter.util.Action1;
 import storm.starter.util.TupleHelpers;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.TimeUnit;
 
 /**
  * This bolt performs rolling counts of incoming objects, i.e. sliding window based counting.
@@ -42,8 +40,6 @@ import java.util.concurrent.TimeUnit;
  * during the first ~ five minutes of startup time if the window length is set to five minutes).
  */
 public class RollingCountBolt extends BaseRichBolt {
-    private final String timerName;
-
     private static final long serialVersionUID = 5537727428628598519L;
     private static final Logger LOG = Logger.getLogger(RollingCountBolt.class);
     private static final int NUM_WINDOW_CHUNKS = 5;
@@ -76,11 +72,6 @@ public class RollingCountBolt extends BaseRichBolt {
                         return counter.getObjectsCount();
                     }
                 });
-
-        MetricName timerMetric = new MetricName(RollingCountBolt.class, "incrementCount");
-        Timer timer = Application.getMetrics().newTimer(timerMetric, TimeUnit.SECONDS, TimeUnit.SECONDS);
-        timerName = timerMetric.toString();
-        MetricsManager.register(timerName, timer);
     }
 
     private int deriveNumWindowChunksFrom(int windowLengthInSeconds, int windowUpdateFrequencyInSeconds) {
@@ -98,7 +89,7 @@ public class RollingCountBolt extends BaseRichBolt {
     @Override
     public void execute(Tuple tuple) {
         if (TupleHelpers.isTickTuple(tuple)) {
-            LOG.debug("Received tick tuple, triggering emit of current window counts");
+            LOG.info("Received tick tuple, triggering emit of current window counts");
             emitCurrentWindowCounts();
         } else {
             countObjAndAck(tuple);
@@ -125,20 +116,11 @@ public class RollingCountBolt extends BaseRichBolt {
     }
 
     private void countObjAndAck(final Tuple tuple) {
-        MetricsManager.interactWith(timerName, new Action1<Timer>() {
-            @Override
-            public void invoke(Timer arg) {
-                TimerContext time = arg.time();
-                try {
-                    Object obj = tuple.getValue(0);
-                    counter.incrementCount(obj);
-                    collector.ack(tuple);
-                } finally {
-                    time.stop();
-                }
-            }
-        });
+        MetricsManager.ROLLING_BOLT_METER.mark();
 
+        Object obj = tuple.getValue(0);
+        counter.incrementCount(obj);
+        collector.ack(tuple);
     }
 
     @Override

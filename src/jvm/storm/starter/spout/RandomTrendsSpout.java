@@ -8,14 +8,10 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
 import com.google.common.collect.Lists;
-import com.yammer.metrics.core.Counter;
-import com.yammer.metrics.core.MetricName;
 import org.uncommons.maths.random.PoissonGenerator;
-import storm.starter.Application;
 import storm.starter.TrendingTopology;
 import storm.starter.metrics.MetricsManager;
 import storm.starter.model.DataModel;
-import storm.starter.util.Action1;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -25,7 +21,6 @@ import java.util.*;
 
 public class RandomTrendsSpout extends BaseRichSpout {
     private SpoutOutputCollector collector;
-    private final String counterName;
     private final static Random random = new Random(System.currentTimeMillis());
     private final int batchSize;
     private final int batchIntervals;
@@ -45,11 +40,6 @@ public class RandomTrendsSpout extends BaseRichSpout {
     private final List<String> tags = new ArrayList<>();
 
     public RandomTrendsSpout(int batchSize, int batchIntervals) {
-        MetricName metricName = new MetricName(RandomTrendsSpout.class, "pendingTuples");
-        Counter pendingTuples = Application.getMetrics().newCounter(metricName);
-        counterName = metricName.toString();
-        MetricsManager.register(counterName, pendingTuples);
-
         this.batchSize = batchSize;
         this.batchIntervals = batchIntervals;
 
@@ -106,12 +96,8 @@ public class RandomTrendsSpout extends BaseRichSpout {
             DataModel dataModel = new DataModel(getNextValue(networks), getNextValue(sites), getNextValue(tags));
             Values tuple = new Values(dataModel.getNetwork(), dataModel.getSite(), dataModel.getTag());
 
-            MetricsManager.interactWith(counterName, new Action1<Counter>() {
-                @Override
-                public void invoke(Counter arg) {
-                    arg.inc();
-                }
-            });
+            MetricsManager.SPOUT_COUNTER.inc();
+            MetricsManager.SPOUT_MESSAGES_METER.mark();
 
             collector.emit(tuple, dataModel);
         }
@@ -131,12 +117,8 @@ public class RandomTrendsSpout extends BaseRichSpout {
             statisticMap.put(dataModel, count + 1);
         }
 
-        MetricsManager.interactWith(counterName, new Action1<Counter>() {
-            @Override
-            public void invoke(Counter arg) {
-                arg.dec();
-            }
-        });
+        MetricsManager.SPOUT_ACK_MESSAGES_METER.mark();
+        MetricsManager.SPOUT_COUNTER.dec();
     }
 
     @Override

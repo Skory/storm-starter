@@ -65,7 +65,7 @@ public class JSONLogReporter extends AbstractPollingReporter implements MetricPr
         super(registry, "log-reporter");
         this.predicate = predicate;
         log = LoggerFactory.getLogger(LOGGER_PREFIX + serviceName);
-        gson = new GsonBuilder().setPrettyPrinting().create();
+        gson = new GsonBuilder()/*.setPrettyPrinting()*/.create();
     }
 
     @Override

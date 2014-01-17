@@ -9,13 +9,12 @@ import java.util.concurrent.TimeUnit;
 public class Application {
     private static final MetricsRegistry metrics = new MetricsRegistry();
 
-    public static MetricsRegistry getMetrics() {
-        return metrics;
-    }
-
-    public static void main(String[] args) throws Exception {
+    static {
         LogReporter.enable("topology", metrics, 10, TimeUnit.SECONDS);
         JSONLogReporter.enable("topology", metrics, 10, TimeUnit.SECONDS);
-        TrendingTopology.main(args);
+    }
+
+    public static MetricsRegistry getMetrics() {
+        return metrics;
     }
 }

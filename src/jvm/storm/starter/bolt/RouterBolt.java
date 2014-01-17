@@ -8,21 +8,14 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.yammer.metrics.core.*;
-import com.yammer.metrics.core.Timer;
-import storm.starter.Application;
 import storm.starter.metrics.MetricsManager;
 import storm.starter.model.DataFields;
 import storm.starter.model.DataModel;
-import storm.starter.util.Action1;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 public class RouterBolt extends BaseRichBolt {
-
     private static final String DEFAULT_STREAM = "default";
-    private final String timerName;
     private OutputCollector collector;
 
     private Map<? extends Set<DataFields>, String> routingMap = ImmutableMap.of(
@@ -30,11 +23,6 @@ public class RouterBolt extends BaseRichBolt {
 
     public RouterBolt(Map<? extends Set<DataFields>, String> routingMap) {
         this.routingMap = routingMap;
-
-        MetricName timerMetric = new MetricName(RouterBolt.class, "grouping");
-        Timer timer = Application.getMetrics().newTimer(timerMetric, TimeUnit.SECONDS, TimeUnit.SECONDS);
-        timerName = timerMetric.toString();
-        MetricsManager.register(timerName, timer);
     }
 
     @Override
@@ -44,30 +32,22 @@ public class RouterBolt extends BaseRichBolt {
 
     @Override
     public void execute(final Tuple tuple) {
-        MetricsManager.interactWith(timerName, new Action1<Timer>() {
-            @Override
-            public void invoke(Timer arg) {
-                TimerContext time = arg.time();
-                try {
-                    DataModel model = new DataModel(tuple.getStringByField(DataFields.network.name()),
-                            tuple.getStringByField(DataFields.site.name()),
-                            tuple.getStringByField(DataFields.tag.name()));
+        MetricsManager.ROUTER_BOLT_METER.mark();
 
-                    for (Map.Entry<? extends Set<DataFields>, String> routingEntry : routingMap.entrySet()) {
-                        List<String> fieldValues = new ArrayList<>();
-                        for (DataFields dataField : routingEntry.getKey()) {
-                            fieldValues.add(model.get(dataField));
-                        }
+        DataModel model = new DataModel(tuple.getStringByField(DataFields.network.name()),
+                tuple.getStringByField(DataFields.site.name()),
+                tuple.getStringByField(DataFields.tag.name()));
 
-                        collector.emit(routingEntry.getValue(), ImmutableList.<Object>of(fieldValues));
-                    }
-
-                    collector.ack(tuple);
-                } finally {
-                    time.stop();
-                }
+        for (Map.Entry<? extends Set<DataFields>, String> routingEntry : routingMap.entrySet()) {
+            List<String> fieldValues = new ArrayList<>();
+            for (DataFields dataField : routingEntry.getKey()) {
+                fieldValues.add(model.get(dataField));
             }
-        });
+
+            collector.emit(routingEntry.getValue(), ImmutableList.of(tuple), ImmutableList.<Object>of(fieldValues));
+        }
+
+        collector.ack(tuple);
     }
 
     @Override

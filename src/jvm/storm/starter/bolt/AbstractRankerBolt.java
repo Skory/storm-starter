@@ -62,7 +62,7 @@ public abstract class AbstractRankerBolt extends BaseBasicBolt {
     @Override
     public final void execute(Tuple tuple, BasicOutputCollector collector) {
         if (TupleHelpers.isTickTuple(tuple)) {
-            getLogger().debug("Received tick tuple, triggering emit of current rankings");
+            getLogger().info("Received tick tuple, triggering emit of current rankings");
             emitRankings(collector);
         } else {
             updateRankingsWithTuple(tuple);
@@ -73,7 +73,7 @@ public abstract class AbstractRankerBolt extends BaseBasicBolt {
 
     private void emitRankings(BasicOutputCollector collector) {
         collector.emit(new Values(rankings.copy()));
-        getLogger().debug("Rankings: " + rankings);
+        getLogger().info("Rankings: " + rankings);
     }
 
     @Override
@@ -83,7 +83,7 @@ public abstract class AbstractRankerBolt extends BaseBasicBolt {
 
     @Override
     public Map<String, Object> getComponentConfiguration() {
-        Map<String, Object> conf = new HashMap<String, Object>();
+        Map<String, Object> conf = new HashMap<>();
         conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, emitFrequencyInSeconds);
         return conf;
     }
