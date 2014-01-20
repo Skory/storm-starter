@@ -17,11 +17,11 @@ public class TrendingTopology {
     public static void main(String[] args) throws Exception {
 
         TopologyBuilder builder = new TopologyBuilder();
-        builder.setSpout("spout", new RandomTrendsSpout(10, 10), 1);
+        builder.setSpout("spout", new RandomTrendsSpout(100, 100), 3);
 
         builder.setBolt("router", new RouterBolt(ImmutableMap.of(EnumSet.of(network, site, tag), "nst",
                 EnumSet.of(network, site), "ns",
-                EnumSet.of(network, tag), "nt")), 3).shuffleGrouping("spout");
+                EnumSet.of(network, tag), "nt")), 1).noneGrouping("spout");
 
         for (String group : new String[]{"nst", "ns", "nt"}) {
             String countBoltName = "count-" + group;
